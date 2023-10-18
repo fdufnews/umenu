@@ -1,3 +1,22 @@
+# umenu 
+# Simple MicroPython library to create nested and multifunctional menu with callbacks and custom menu items. 
+#
+# Copyright (C) 2021, Paweł Ługowski
+# under GNU General Public License as published by the Free Software Foundation, either version 3
+# 
+# Modifications (C) 2023, fdufnews
+# under same license
+#
+# Added support for color displays
+# - added _fg_col and _bg_col in Menu class
+# - added setter and getter for _fg_col and _bg_col
+# - replaced everywhere in the code 0 and 1 colors by _fg_col and _bg_col
+#
+# Added a rollover parameter to MenuScreen.
+# This option helps walking through the menu with just one button
+# - when rollover is True and up() or down() reaches one end of the menu it jumps to the other end
+# - when rollover is False and up() or down() reaches one end of the menu it stops
+
 try:
     from display import CENTER, RIGHT
 except ImportError:
@@ -218,17 +237,17 @@ class ValueItem(CustomItem, CallbackItem):
         self.callback = callback
 
     def draw(self):
-        self.display.fill(0)
+        self.display.fill(self._bg_col)
         if hasattr(self.display, 'rich_text'):
-            self.display.text(str.upper(self.name), None, 0, 1, align=CENTER)
-            self.display.rich_text(str(self.value), None, 20, 1, size=5, align=CENTER)
+            self.display.text(str.upper(self.name), None, 0, self._fg_col, align=CENTER)
+            self.display.rich_text(str(self.value), None, 20, self._fg_col, size=5, align=CENTER)
         else:
             x_pos = self.display.width - (len(self.name) * 8) - 1
-            self.display.text(str.upper(self.name), x_pos, 0, 1)
+            self.display.text(str.upper(self.name), x_pos, 0, self._fg_col)
             x_pos = self.display.width - (len(str(self.value)) * 8) - 1
-            self.display.text(str(self.value), x_pos, 20, 1)
+            self.display.text(str(self.value), x_pos, 20, self._fg_col)
 
-        self.display.hline(0, 10, self.display.width, 1)
+        self.display.hline(0, 10, self.display.width, self._fg_col)
         self.display.show()
 
     def select(self):
@@ -273,12 +292,13 @@ class BackItem(MenuItem):
 
 class MenuScreen:
 
-    def __init__(self, title: str, parent=None):
+    def __init__(self, title: str, parent=None, rollover = True):
         self._items = []
         self._visible_items = []
         self.selected = 0
         self.parent = parent
         self.title = title
+        self._rollover = rollover
 
     def add(self, item, parent=None):
         item.parent = self if parent is None else parent
@@ -300,12 +320,18 @@ class MenuScreen:
         return elements + (1 if self.parent is not None else 0)
 
     def up(self) -> None:
-        if self.selected > 0:
-            self.selected = self.selected - 1
+        if self._rollover:
+            self.selected  = self.count() - 1 if self.selected == 0 else self.selected -1
+        else :        
+            if self.selected > 0:
+                self.selected = self.selected - 1
 
     def down(self) -> None:
-        if self.selected + 1 < self.count():
-            self.selected = self.selected + 1
+        if self._rollover:
+            self.selected  = 0 if self.selected + 1 >= self.count() else self.selected + 1
+        else :        
+            if self.selected + 1 < self.count():
+                self.selected = self.selected + 1
 
     def get(self, position):
 
@@ -344,7 +370,25 @@ class Menu:
         self.font_height = font_height
         self.font_width = font_width
         self.main_screen = None
+        self._fg_col = self.display.rgb(255,255,255)
+        self._bg_col = self.display.rgb(0,0,0)
 
+    @property
+    def bg_col(self):
+        return self._bg_col
+
+    @bg_col.setter
+    def bg_col(self, col):
+        self._bg_col = col
+
+    @property
+    def fg_col(self):
+        return self._fg_col
+
+    @fg_col.setter
+    def fg_col(self, col):
+        self._fg_col = col
+        
     def set_screen(self, screen: MenuScreen):
         self.current_screen = screen
         if self.main_screen is None:
@@ -371,7 +415,7 @@ class Menu:
             self.current_screen.draw()
             return
 
-        self.display.fill(0)
+        self.display.fill(self._bg_col)
 
         self._menu_header(self.current_screen.title)
 
@@ -390,22 +434,24 @@ class Menu:
         menu_y_end = 12
         y = menu_y_end + (pos * self.line_height)
         v_padding = int((self.line_height - self.font_height) / 2)
-        background = int(item.is_active)
+        #background = int(item.is_active)
+        background = self._fg_col if item.is_active else self._bg_col
+        foreground = self._bg_col if item.is_active else self._fg_col
 
         self.display.fill_rect(0, y, self.display.width, self.line_height, background)
 
         if hasattr(self.display, 'rich_text'):
-            self.display.rich_text(str.upper(item.name), 2, y + v_padding, int(not background))
-            self.display.rich_text(str.upper(item.get_decorator()), None, y + v_padding, int(not background), align=RIGHT)
+            self.display.rich_text(str.upper(item.name), 2, y + v_padding, foreground)
+            self.display.rich_text(str.upper(item.get_decorator()), None, y + v_padding, foreground, align=RIGHT)
         else:
-            self.display.text(item.name, 0, y + v_padding, int(not background))
+            self.display.text(item.name, 0, y + v_padding, foreground)
             x_pos = self.display.width - (len(item.get_decorator()) * self.font_width) - 1
-            self.display.text(item.get_decorator(), x_pos, y + v_padding, int(not background))
+            self.display.text(item.get_decorator(), x_pos, y + v_padding, foreground)
 
     def _menu_header(self, text):
         x = int((self.display.width / 2) - (len(text) * self.font_width / 2))
-        self.display.text(str.upper(self.current_screen.title), x, 0, 1)
-        self.display.hline(0, self.font_height + 2, self.display.width, 1)
+        self.display.text(str.upper(self.current_screen.title), x, 0, self._fg_col)
+        self.display.hline(0, self.font_height + 2, self.display.width, self._fg_col)
 
     def _update_display(self, menu_items):
         """

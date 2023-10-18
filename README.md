@@ -1,6 +1,20 @@
 # uMenu
 
-Simple MicroPython library to create nested and multifunctional menu with callbacks and custom menu items. 
+Simple MicroPython library to create nested and multifunctional menu with callbacks and custom menu items.  
+
+This is a fork of Paweł Ługowski repo
+## Why that fork
+This fork has the following enhancement.  
+###Support for color displays.  
+Two properties were added to Menu, fg_col and bg_col which can store foreground color and background color of the menu.  
+Those 2 properties default to white and black so they make this modification compatible with previous version providing that the display driver has implemented the rgb(r, g, b) method that converts r, g, b values to whichever format the display is using.  
+###A rollover argument added to MenuScreen
+This option helps walking through the menu with just one button
+
+- when rollover is True and up() or down() reaches one end of the menu, it jumps to the other end
+- when rollover is False and up() or down() reaches one end of the menu, it stops
+
+This argument defaults to True
 
 [![uMenu Example on Video](https://img.youtube.com/vi/TZODmWPMVwM/0.jpg)](https://youtu.be/TZODmWPMVwM)
 
@@ -184,5 +198,6 @@ See [`examples/rotary_encoder_menu.py`](./examples/rotary_encoder_menu.py).
 ## License
 
 Copyright (C) 2021, Paweł Ługowski
+Copyright (C) 2023, fdufnews for color support
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
