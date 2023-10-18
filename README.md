@@ -5,10 +5,10 @@ Simple MicroPython library to create nested and multifunctional menu with callba
 This is a fork of Paweł Ługowski repo
 ## Why that fork
 This fork has the following enhancement.  
-###Support for color displays.  
+### Support for color displays.  
 Two properties were added to Menu, fg_col and bg_col which can store foreground color and background color of the menu.  
 Those 2 properties default to white and black so they make this modification compatible with previous version providing that the display driver has implemented the rgb(r, g, b) method that converts r, g, b values to whichever format the display is using.  
-###A rollover argument added to MenuScreen
+### A rollover argument added to MenuScreen
 This option helps walking through the menu with just one button
 
 - when rollover is True and up() or down() reaches one end of the menu, it jumps to the other end
